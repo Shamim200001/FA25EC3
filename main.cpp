@@ -89,14 +89,14 @@ vector<StoryNodeRaw> parseStoryFile(const string &filename) {
         string temp;
         while (getline(ss, temp, ',')) {
             while (!temp.empty() && temp.front() == ' ') temp.erase(0, 1);
-            if (!temp.empty()) node.children.push_back(temp);
-        }
+                       if (!temp.empty()) node.children.push_back(temp);
 
+            }
         nodes.push_back(node);
-    }
-
+        }
     return nodes;
-}
+
+    }
 
 // Main Program
 int main() {
@@ -104,25 +104,57 @@ int main() {
     string apiKey;
     getline(cin, apiKey);
 
-    string filename = runCurlToOpenAI(apiKey);
+    string filename;
+    if (apiKey.empty()) {
+        // Use test story when no API key provided
+        filename = "story.txt";
+        // Create test story file
+        ofstream testFile(filename);
+        testFile << "[1] TEXT: You stand in a forest clearing. NEXT: 2, 3\n";
+        testFile << "[2] TEXT: You follow a narrow path. NEXT: 4\n";
+        testFile << "[3] TEXT: You enter a dark cave. NEXT: 4, 5\n";
+        testFile << "[4] TEXT: You find an abandoned hut. NEXT: 6\n";
+        testFile << "[5] TEXT: A river blocks your way. NEXT: 6\n";
+        testFile << "[6] TEXT: You reach the ancient ruins. NEXT:\n";
+        testFile.close();
+        cout << "Using test story..." << endl;
+    } else {
+        filename = runCurlToOpenAI(apiKey);
+    }
 
     vector<StoryNodeRaw> rawNodes = parseStoryFile(filename);
     if (rawNodes.empty()) {
         cerr << "Story was empty or invalid." << endl;
         return 1;
     }
-
-    Tree<string> adventureTree;
-
     // TODO: Students, create the root from rawNodes[0]
-    // adventureTree.createRoot(rawNodes[0].id, rawNodes[0].text);
 
-    // TODO: Students, add all remaining nodes
-    // for (int i = 1; i < rawNodes.size(); i++) {
-    //     adventureTree.addNode(...);
-    // }
+    // start with creating the tree and structure
+    //Creating the root from the first node
+    Tree<string> adventureTree;
+    if (!rawNodes.empty()) {
+        adventureTree.createRoot(rawNodes[0].id, rawNodes[0].text);
+    }
+//add all the node and the connections
+    //later find the child's text in rawNodes
+    for ( const auto &node : rawNodes) {
+        for ( const auto &childId : node.children) {
+            string childText;
+            for (const auto& rawNode : rawNodes) {
+                if (rawNode.id == childId) {
+                    childText = rawNode.text;
+                    break;
+                }
+            }
 
+            if (!childText.empty()) {
+                adventureTree.addNode(node.id, childId, childText);
+            }
+        }
+
+    }
     // TODO: Students, implement a method in Tree<T> called playGame()
+    //I implemented that on tree.h
     // This method should:
     // 1. Start at the root node.
     // 2. Display the current node's text.
@@ -132,12 +164,12 @@ int main() {
     // 6. Print an ending message.
     //
     // Example call after tree construction:
-    // adventureTree.playGame();
+    //adventureTree.playGame();
 
     cout << "Story loaded into your dynamic tree structure." << endl;
     cout << "Implement the Tree class to enable traversal and printing." << endl;
-
+    adventureTree.printAll();
     // TODO: Once implemented, uncomment to allow full gameplay.
-    // adventureTree.playGame();
+    adventureTree.playGame();
     return 0;
 }
